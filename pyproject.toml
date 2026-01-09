@@ -42,7 +42,6 @@ classifiers = [
     "Environment :: X11 Applications :: Qt",
     "Environment :: Win32 (MS Windows)",
     "Environment :: MacOS X",
-    "Framework :: Qt",
 ]
 dependencies = [
     "PyQt6>=6.4.0",
