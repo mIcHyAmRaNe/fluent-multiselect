@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fluent_multiselect"
-version = "0.1.0"
+dynamic = ["version"]
 description = "A Windows 11 Fluent Design styled multi-select combo box for PyQt6"
 readme = "README.md"
 license = {text = "MIT"}
@@ -72,6 +72,9 @@ Changelog = "https://github.com/michyamrane/fluent_multiselect/blob/main/CHANGEL
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "fluent_multiselect.__version__"}
 
 [tool.setuptools.package-data]
 "fluent_multiselect" = ["py.typed"]
