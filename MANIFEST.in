@@ -1,0 +1,6 @@
+include LICENSE
+include README.md
+include CHANGELOG.md
+include src/fluent_multiselect/py.typed
+recursive-include examples *.py
+recursive-include tests *.py
