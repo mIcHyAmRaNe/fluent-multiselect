@@ -1,0 +1,103 @@
+name: Release to PyPI
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Extract version from tag
+      id: get_version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        echo "📦 Building version: $VERSION"
+        
+    - name: Update version in __init__.py
+      run: |
+        sed -i 's/__version__ = ".*"/__version__ = "${{ steps.get_version.outputs.VERSION }}"/' src/fluent_multiselect/__init__.py
+        
+    - name: Install build tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine wheel setuptools
+        
+    - name: Build package
+      run: |
+        python -m build
+        ls -lh dist/
+        
+    - name: Verify package
+      run: twine check dist/*
+        
+    - name: Generate checksums
+      run: |
+        cd dist
+        sha256sum * > SHA256SUMS.txt
+        
+    - name: Extract changelog for this version
+      id: changelog
+      run: |
+        VERSION="${{ steps.get_version.outputs.VERSION }}"
+        
+        if [ -f "CHANGELOG.md" ]; then
+          # Extraire la section de cette version
+          sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$ d' > release_notes.md
+          
+          # Si vide, créer un message par défaut
+          if [ ! -s release_notes.md ]; then
+            echo "## [$VERSION]" > release_notes.md
+            echo "" >> release_notes.md
+            echo "See [CHANGELOG.md](CHANGELOG.md) for details." >> release_notes.md
+          fi
+        else
+          # Pas de CHANGELOG, message minimal
+          echo "Release $VERSION" > release_notes.md
+        fi
+        
+        echo "📝 Release notes:"
+        cat release_notes.md
+        
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: ${{ steps.get_version.outputs.TAG }}
+        body_path: release_notes.md
+        draft: false
+        prerelease: false
+        files: |
+          dist/*.whl
+          dist/*.tar.gz
+          dist/SHA256SUMS.txt
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Publish to PyPI
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      run: |
+        twine upload dist/*.whl dist/*.tar.gz
+        echo "✅ Published to PyPI"
+        
+    - name: Summary
+      run: |
+        echo "## ✅ Release ${{ steps.get_version.outputs.TAG }} Published" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- PyPI: https://pypi.org/project/fluent-multiselect/${{ steps.get_version.outputs.VERSION }}/" >> $GITHUB_STEP_SUMMARY
+        echo "- Release: https://github.com/michyamrane/fluent_multiselect/releases/tag/${{ steps.get_version.outputs.TAG }}" >> $GITHUB_STEP_SUMMARY
