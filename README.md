@@ -21,7 +21,7 @@ A beautiful, modern multi-select combo box widget for PyQt6 with **Windows 11 Fl
 ## 📦 Installation
 
 ```bash
-pip install fluent_multiselect
+pip install fluent-multiselect
 ```
 
 ## 🚀 Quick Start
